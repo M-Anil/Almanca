@@ -96,10 +96,12 @@ textarea { width: 100%; min-height: 90px; font: .85rem/1.4 ui-monospace, monospa
   <!-- Başlangıç -->
   <section id="start" class="wrap" style="padding:0">
     <div>
-      <p class="eyebrow">TestDaF · TDN 4 hedefi · Gesellschaft &amp; Politik</p>
+      <p class="eyebrow">TestDaF · TDN 4 hedefi</p>
       <h1>Kelime testi</h1>
     </div>
+    <div class="row" id="unitChips"></div>
     <div class="panel">
+      <p class="eyebrow" id="sUnit"></p>
       <p>Listedeki <b id="sTotal"></b> kelime sırayla sorulur. Bilmediklerini Claude toplar ve sonra SA, HV-LV ve Boşver olarak ayırır.</p>
       <div class="bar"><i id="sBar"></i></div>
       <p class="muted" id="sInfo"></p>
@@ -151,7 +153,7 @@ textarea { width: 100%; min-height: 90px; font: .85rem/1.4 ui-monospace, monospa
 
 <script>
 // [Almanca, Türkçe, tür (n/v/a/r), grup (sa/hv/x), SA için kalıp/örnek]
-const WORDS = [
+const W1 = [
 ["abschaffen","kaldırmak, son vermek","v","sa","die Wehrpflicht / Studiengebühren abschaffen"],
 ["abschrecken","korkutup vazgeçirmek, yıldırmak","v","hv","eine abschreckende Wirkung haben"],
 ["abstimmen","oylamak","v","hv","über etw. abstimmen"],
@@ -357,6 +359,232 @@ const WORDS = [
 ["zum Schweigen bringen","susturmak","r","hv",""],
 ["zwischenmenschlich","kişiler arası","a","sa","zwischenmenschliche Beziehungen"],
 ];
+// Ünite 2 · Arbeit & Wirtschaft
+const W2 = [
+["steigen","yükselmek, artmak","v","sa","von 20 auf 35 Prozent steigen"],
+["sinken","düşmek, azalmak","v","sa","um 5 Prozent sinken"],
+["zunehmen","artmak","v","sa","Die Zahl nimmt stetig zu."],
+["die Zunahme","artış","n","sa","eine deutliche Zunahme"],
+["die Abnahme","azalma, düşüş; teslim alma","n","sa","eine Abnahme um 10 Prozent"],
+["die Steigerung","artış","n","sa","eine Steigerung um das Doppelte"],
+["schwanken","dalgalanmak","v","sa","zwischen 10 und 15 Prozent schwanken"],
+["die Schwankung","dalgalanma","n","sa","starke Schwankungen aufweisen"],
+["der Anteil","pay, oran","n","sa","Der Anteil der Frauen liegt bei 40 %."],
+["die Tendenz","eğilim","n","sa","Die Tendenz ist steigend."],
+["die Prognose","tahmin, öngörü","n","sa","Laut Prognose wird die Zahl bis 2030 …"],
+["betragen","(miktar olarak) … olmak","v","sa","Der Anteil beträgt 25 Prozent."],
+["erhöhen","yükseltmek, artırmak","v","sa","die Löhne erhöhen; sich auf 40 % erhöhen"],
+["reduzieren","azaltmak","v","sa","Kosten reduzieren"],
+["verzeichnen","kaydetmek (artış, düşüş)","v","sa","einen Anstieg verzeichnen"],
+["schrumpfen","küçülmek, azalmak","v","sa","Die Bevölkerung schrumpft."],
+["die Quote","oran, kota","n","sa","die Arbeitslosenquote; die Frauenquote"],
+["die Kosten","masraflar, maliyet","n","sa","Die Kosten steigen."],
+["die Ausgabe","harcama; baskı; dağıtım","n","sa","die Ausgaben für Bildung"],
+["die Nachfrage","talep, rağbet","n","sa","Die Nachfrage nach Fachkräften steigt."],
+["der Bedarf","ihtiyaç","n","sa","Bedarf an etw. (+Dat.)"],
+["die Anforderung","gereklilik, şart","n","sa","hohe Anforderungen an Bewerber stellen"],
+["die Bedingung","koşul, şart","n","sa","die Arbeitsbedingungen verbessern"],
+["der Anreiz","teşvik","n","sa","Anreize schaffen"],
+["fördern","desteklemek, teşvik etmek","v","sa","die Weiterbildung fördern"],
+["fordern","talep etmek","v","sa","höhere Löhne fordern"],
+["profitieren","yararlanmak","v","sa","von etw. (+Dat.) profitieren"],
+["die Vereinbarkeit","bağdaştırma, uyum","n","sa","die Vereinbarkeit von Familie und Beruf"],
+["die Weiterbildung","ileri eğitim, mesleki gelişim","n","sa","an einer Weiterbildung teilnehmen"],
+["die Flexibilität","esneklik","n","sa","mehr Flexibilität bei der Arbeitszeit"],
+["langfristig","uzun vadeli","a","sa","langfristig gesehen"],
+["kurzfristig","kısa vadeli","a","sa","kurzfristige Lösungen"],
+["wirtschaftlich","ekonomik","a","sa","aus wirtschaftlicher Sicht"],
+["erzielen","elde etmek (sonuç)","v","sa","gute Ergebnisse erzielen"],
+["umsetzen","uygulamaya koymak","v","sa","Maßnahmen umsetzen"],
+["übernehmen","üstlenmek, devralmak","v","sa","Verantwortung übernehmen"],
+["verfügen über","sahip olmak","v","sa","über gute Kenntnisse verfügen"],
+["sich einen Vorteil verschaffen","avantaj sağlamak","r","sa","sich einen Vorteil gegenüber anderen verschaffen"],
+["der Lohn","ücret, maaş","n","sa","Die Löhne sind gestiegen."],
+["arbeitslos","işsiz","a","sa","Immer mehr Menschen sind arbeitslos."],
+["der Betrag","tutar, meblağ","n","hv",""],
+["die Summe","toplam; meblağ","n","hv",""],
+["vermindern","azaltmak","v","hv",""],
+["der Umsatz","ciro","n","hv","den Umsatz steigern"],
+["der Verlust","kayıp, zarar","n","hv",""],
+["die Einnahme","gelir","n","hv",""],
+["die Einbuße","kayıp, zarar","n","hv","Einbußen hinnehmen"],
+["die Forderung","talep","n","hv",""],
+["die Erwerbstätigkeit","ücretli çalışma","n","hv",""],
+["die Erwerbsarbeit","ücretli çalışma","n","hv",""],
+["die Leistungsfähigkeit","performans, kapasite","n","hv",""],
+["die Effizienz","verimlilik","n","hv",""],
+["die Effizienzsteigerung","verimlilik artışı","n","hv",""],
+["die Kompetenz","yetkinlik; yetki","n","hv",""],
+["kompetent","yetkin, ehil","a","hv",""],
+["die Fertigkeit","beceri","n","hv",""],
+["die Stelle","iş, pozisyon; yer","n","hv",""],
+["die Stellung","pozisyon; görüş","n","hv","Stellung nehmen zu"],
+["die Tätigkeit","faaliyet, iş","n","hv",""],
+["tätig","çalışan, faal","a","hv","in einem Betrieb tätig sein"],
+["der Arbeitsalltag","iş hayatının günlük akışı","n","hv",""],
+["die Berufserfahrung","iş tecrübesi","n","hv",""],
+["die Industrialisierung","sanayileşme","n","hv",""],
+["die Steuer","vergi","n","hv",""],
+["festlegen","belirlemek","v","hv",""],
+["festsetzen","saptamak, belirlemek","v","hv",""],
+["Karriere machen","kariyer yapmak","r","hv",""],
+["die Karriere","kariyer","n","hv",""],
+["abdecken","örtmek; (masrafı) karşılamak","v","hv","die Kosten abdecken"],
+["anfallen","(masraf, iş) ortaya çıkmak","v","hv","Es fallen Kosten an."],
+["anfertigen","hazırlamak, yapmak","v","hv",""],
+["anfordern","(resmi) talep etmek","v","hv",""],
+["die Anfrage","talep, soru","n","hv",""],
+["anlegen","(para) yatırmak; düzenlemek","v","hv","Geld anlegen"],
+["anschaffen","satın almak, edinmek","v","hv",""],
+["anstellen","işe almak","v","hv",""],
+["die Anstellung","istihdam, iş","n","hv",""],
+["die Absage","ret, iptal","n","hv",""],
+["die Anzeige","ilan; (polise) şikâyet","n","hv",""],
+["aufsetzen","(belge) hazırlamak; takmak","v","hv","einen Vertrag aufsetzen"],
+["der Auftrag","sipariş, görev","n","hv",""],
+["ausbeuten","sömürmek","v","hv",""],
+["ausgebildet","eğitimli, kalifiye","a","hv",""],
+["aushandeln","müzakere ederek anlaşmak","v","hv",""],
+["ausüben","(meslek) icra etmek","v","hv","einen Beruf ausüben"],
+["der Beamte","memur","n","hv",""],
+["befördern","terfi ettirmek; taşımak","v","hv",""],
+["befristet","süreli","a","hv","ein befristeter Vertrag"],
+["der Beleg","fiş, belge, kanıt","n","hv",""],
+["die Belohnung","ödül","n","hv",""],
+["berechnen","hesaplamak","v","hv",""],
+["der Bericht","rapor","n","hv",""],
+["beschaffen","temin etmek","v","hv",""],
+["betreiben","işletmek, yürütmek","v","hv",""],
+["betreuen","ilgilenmek, bakmak","v","hv",""],
+["betrügen","dolandırmak, aldatmak","v","hv",""],
+["der Bewerber","aday","n","hv",""],
+["sich bewerben um","başvurmak","v","hv","sich um eine Stelle bewerben"],
+["der Betrieb","işletme","n","hv",""],
+["der Feierabend","mesai bitimi","n","hv",""],
+["der Händler","tüccar, satıcı","n","hv",""],
+["der Klient","müşteri, müvekkil","n","hv",""],
+["der Konsument","tüketici","n","hv",""],
+["der Saisonjob","mevsimlik iş","n","hv",""],
+["der Vertrag","sözleşme","n","hv",""],
+["der Werdegang","kariyer gelişimi","n","hv",""],
+["die Agentur","ajans","n","hv",""],
+["die Arbeitserlaubnis","çalışma izni","n","hv",""],
+["die Baustelle","şantiye","n","hv",""],
+["die Beratung","danışmanlık","n","hv",""],
+["die Beschwerde","şikâyet","n","hv",""],
+["die Besprechung","toplantı, görüşme","n","hv",""],
+["die Gebühr","ücret, harç","n","hv",""],
+["die Geschäftsleitung","işletme yönetimi","n","hv",""],
+["das Geschäftsleben","iş hayatı","n","hv",""],
+["die Mahnung","ihtar, uyarı","n","hv",""],
+["die Praxis","uygulama; muayenehane","n","hv",""],
+["die Schulden","borçlar","n","hv",""],
+["die Teamfähigkeit","takım çalışmasına yatkınlık","n","hv",""],
+["teamfähig","takım çalışmasına yatkın","a","hv",""],
+["die Unterschrift","imza","n","hv",""],
+["die Währung","para birimi","n","hv",""],
+["die Ware","mal, ürün","n","hv",""],
+["die Werkstatt","atölye","n","hv",""],
+["einnehmen","(para) kazanmak; (ilaç) almak","v","hv",""],
+["einstellen","işe almak; durdurmak; ayarlamak","v","hv",""],
+["entlassen","işten çıkarmak","v","hv",""],
+["erledigen","halletmek","v","hv",""],
+["die Ermäßigung","indirim","n","hv",""],
+["eröffnen","açmak (hesap, işyeri)","v","hv",""],
+["die Fabrik","fabrika","n","hv",""],
+["die Finanzkrise","mali kriz","n","hv",""],
+["die Frist","süre, vade","n","hv",""],
+["genehmigen","onaylamak, izin vermek","v","hv",""],
+["das Geschäft","iş, ticaret; dükkân","n","hv",""],
+["gewissenhaft","titiz, özenli","a","hv",""],
+["gründen","kurmak","v","hv",""],
+["herstellen","üretmek","v","hv",""],
+["die Herstellung","üretim","n","hv",""],
+["produzieren","üretmek","v","hv",""],
+["der Produzent","üretici","n","hv",""],
+["der Rohstoff","hammadde","n","hv",""],
+["der Handwerker","zanaatkâr, usta","n","hv",""],
+["kündigen","feshetmek; istifa etmek","v","hv",""],
+["lagern","depolamak","v","hv",""],
+["leiten","yönetmek","v","hv",""],
+["der Makler","emlakçı, aracı","n","hv",""],
+["die Prämie","prim, ikramiye","n","hv",""],
+["qualifizieren","nitelikli kılmak","v","hv",""],
+["die Rekrutierung","personel alımı","n","hv",""],
+["die Personalbeschaffung","personel temini","n","hv",""],
+["riskieren","riske atmak","v","hv",""],
+["schaffen","başarmak; yaratmak","v","hv",""],
+["die Schicht","vardiya; tabaka","n","hv",""],
+["seriös","ciddi, güvenilir","a","hv",""],
+["sicherstellen","güvenceye almak, sağlamak","v","hv",""],
+["sparsam","tutumlu","a","hv",""],
+["die Stellenanzeige","iş ilanı","n","hv",""],
+["die Stellenausschreibung","iş ilanı","n","hv",""],
+["stornieren","iptal etmek","v","hv",""],
+["überweisen","havale etmek","v","hv",""],
+["überzeugend","ikna edici","a","hv",""],
+["überziehen","(hesabı) aşmak; kaplamak","v","hv",""],
+["untergeordnet","ikincil, bağlı","a","hv",""],
+["vakant","boş (pozisyon)","a","hv",""],
+["verdienen","kazanmak; hak etmek","v","hv",""],
+["verlangen","talep etmek","v","hv",""],
+["verschieben","ertelemek","v","hv",""],
+["verteilen","dağıtmak","v","hv",""],
+["vertreiben","satmak (dağıtımla); kovmak","v","hv",""],
+["der Vertreter","temsilci","n","hv",""],
+["verwalten","yönetmek, idare etmek","v","hv",""],
+["der/die Vorgesetzte","amir","n","hv",""],
+["vorlegen","sunmak, ibraz etmek","v","hv",""],
+["zielorientiert","hedef odaklı","a","hv",""],
+["zurückzahlen","geri ödemek","v","hv",""],
+["der Zuschuss","hibe, mali yardım","n","hv",""],
+["zuständig","sorumlu, yetkili","a","hv",""],
+["die Präsentation","sunum","n","hv",""],
+["der Weltmarkt","dünya pazarı","n","hv",""],
+["die Vision","vizyon","n","hv",""],
+["einbringen in","katkıda bulunmak","v","hv","Ideen in ein Projekt einbringen"],
+["lukrativ","kârlı","a","hv",""],
+["abheben","para çekmek; havalanmak","v","hv",""],
+["abfüllen","şişelemek","v","x",""],
+["abgelten","tazmin etmek","v","x",""],
+["der Abzug","kesinti; kopya","n","x",""],
+["der Antritt","göreve başlama","n","x",""],
+["anzahlen","peşinat ödemek","v","x",""],
+["ausschütten","dökmek; (kâr payı) dağıtmak","v","x",""],
+["der Auszahlungstag","ödeme günü","n","x",""],
+["befristen","süreyle sınırlamak","v","x",""],
+["die Corporate Identity","kurumsal kimlik","n","x",""],
+["das Durchsetzungsvermögen","kendini kabul ettirme yeteneği","n","x",""],
+["die Durchwahl","dahili numara","n","x",""],
+["drosseln","kısmak","v","x",""],
+["die Einsatzbereitschaft","özveri","n","x",""],
+["der Eintrittstermin","işe başlama tarihi","n","x",""],
+["der Erlös","hasılat","n","x",""],
+["ertragreich","verimli, kazançlı","a","x",""],
+["die Fortzahlung","ödemenin devamı","n","x",""],
+["die Freistellung","muafiyet; görevden alma","n","x",""],
+["die Gewährung","verme, sağlama","n","x",""],
+["haften","sorumlu olmak; yapışmak","v","x",""],
+["immateriell","maddi olmayan","a","x",""],
+["initiieren","başlatmak","v","x",""],
+["die Personalfluktuation","personel devir hızı","n","x",""],
+["die Rivalität","rekabet","n","x",""],
+["die Schnupperlehre","deneme stajı","n","x",""],
+["die Sparte","dal, sektör","n","x",""],
+["die Teambildung","ekip oluşturma","n","x",""],
+["das Teamevent","takım etkinliği","n","x",""],
+["übereinkommen","anlaşmak","v","x",""],
+["die Verbindlichkeit","yükümlülük, borç","n","x",""],
+["der Volontär","gönüllü stajyer","n","x",""],
+["wegbrechen","kopmak; azalmak","v","x",""],
+["zielgerichtet","hedefe yönelik","a","x",""],
+["die Abwertung","devalüasyon; küçümseme","n","x",""],
+];
+const UNITS = [
+  { id: "u1", name: "Ünite 1 · Gesellschaft & Politik", doc: "run", local: "tdaf-run", words: W1 },
+  { id: "u2", name: "Ünite 2 · Arbeit & Wirtschaft", doc: "run2", local: "tdaf-run-u2", words: W2 },
+];
+
 const POS = { n: "Nomen", v: "Verb", a: "Adjektiv", r: "Redewendung" };
 const $ = id => document.getElementById(id);
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -365,26 +593,36 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
 
-// İlerleme: kaçıncı sorudayız ve bilinmeyen kelimeler. Tarayıcıda ve (varsa) db'de tutulur.
-let run = store.get("tdaf-run", { pos: 0, misses: [] });
+// İlerleme her ünite için ayrı: kaçıncı sorudayız ve bilinmeyenler. Tarayıcıda ve (varsa) db'de tutulur.
+const runs = {};
+for (const u of UNITS) runs[u.id] = store.get(u.local, { pos: 0, misses: [] });
+let unit = UNITS[Math.min(store.get("tdaf-unit", UNITS.length - 1), UNITS.length - 1)];
+let WORDS = unit.words, run = runs[unit.id];
+function setUnit(u) { unit = u; WORDS = u.words; run = runs[u.id]; store.set("tdaf-unit", UNITS.indexOf(u)); }
+
 let remote = null, saveTimer = null;
 function save() {
-  store.set("tdaf-run", run);
+  runs[unit.id] = run;
+  store.set(unit.local, run);
   if (!remote) return;
+  const u = unit, r = run;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    remote.doc("progress/run").set({ ...run, total: WORDS.length, done: run.pos >= WORDS.length, updatedAt: new Date().toISOString() }).catch(() => {});
+    remote.doc("progress/" + u.doc).set({ ...r, unit: u.name, total: u.words.length, done: r.pos >= u.words.length, updatedAt: new Date().toISOString() }).catch(() => {});
   }, 600);
 }
 (async () => {
   const db = await window.claude?.use?.("db");
   if (!db) return;
   try {
-    const snap = await db.doc("progress/run").get();
-    if (snap.exists) {
-      const d = snap.data();
-      if ((d.pos || 0) > run.pos) run = { pos: d.pos, misses: d.misses || [] };
+    for (const u of UNITS) {
+      const snap = await db.doc("progress/" + u.doc).get();
+      if (snap.exists) {
+        const d = snap.data();
+        if ((d.pos || 0) > runs[u.id].pos) runs[u.id] = { pos: d.pos, misses: d.misses || [] };
+      }
     }
+    run = runs[unit.id];
     remote = db; save();
     if (!$("start").hidden) home();
   } catch {}
@@ -398,6 +636,15 @@ function home() {
   show("start");
   const n = WORDS.length, p = Math.min(run.pos, n);
   $("sTotal").textContent = n;
+  $("sUnit").textContent = unit.name;
+  const uc = $("unitChips"); uc.innerHTML = "";
+  for (const u of UNITS) {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = u.name;
+    b.setAttribute("aria-pressed", u === unit);
+    b.onclick = () => { setUnit(u); home(); };
+    uc.appendChild(b);
+  }
   $("sBar").style.width = (p / n * 100) + "%";
   $("resetConfirm").hidden = true;
   $("resetBtn").hidden = p === 0;
@@ -449,7 +696,7 @@ function finish() {
   const n = WORDS.length, m = run.misses.length;
   $("rScore").textContent = `${n - m} / ${n}`;
   $("rSub").textContent = `${m} kelimeyi bilmedin.`;
-  $("rText").value = `TestDaF: ${n - m}/${n} bilinen\nBilinmeyenler: ${run.misses.join(", ")}`;
+  $("rText").value = `${unit.name}: ${n - m}/${n} bilinen\nBilinmeyenler: ${run.misses.join(", ")}`;
 }
 
 $("startBtn").onclick = render;
