@@ -1,0 +1,516 @@
+<title>TestDaF Wortschatz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Schibsted+Grotesk:wght@400;500;600&display=swap">
+<style>
+/* Layout: tek sütun, 640px kart; üstte ilerleme, ortada kelime, altta şıklar */
+:root {
+  --bg: #f3f4f1;
+  --surface: #ffffff;
+  --line: #d9ddd6;
+  --fg: #1b1f1c;
+  --muted: #646b66;
+  --accent: #2f5d50;
+  --ok: #2e7d4f;
+  --ok-bg: #e3f2e8;
+  --bad: #b23a2e;
+  --bad-bg: #f8e4e1;
+  --sa: #c0392b;
+  --hv: #b7860b;
+  --x: #8a918c;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161917; --surface: #1e2220; --line: #343a37; --fg: #ecefec; --muted: #9aa29d;
+    --accent: #7fbfa9; --ok: #6fcf97; --ok-bg: #1f3a2a; --bad: #f08a7e; --bad-bg: #432421;
+    --sa: #f07a6d; --hv: #e6b84a; --x: #8a918c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161917; --surface: #1e2220; --line: #343a37; --fg: #ecefec; --muted: #9aa29d;
+  --accent: #7fbfa9; --ok: #6fcf97; --ok-bg: #1f3a2a; --bad: #f08a7e; --bad-bg: #432421;
+  --sa: #f07a6d; --hv: #e6b84a; --x: #8a918c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 16px; line-height: 1.5; }
+.wrap { max-width: 680px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 48px; display: grid; gap: 20px; }
+h1, h2 { font-family: var(--serif); font-weight: 600; margin: 0; text-wrap: balance; }
+h1 { font-size: 1.9rem; }
+h2 { font-size: 1.25rem; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 14px; font-size: .9rem; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 18px; font-weight: 500; }
+.btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: default; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.dot.sa { background: var(--sa); } .dot.hv { background: var(--hv); } .dot.x { background: var(--x); }
+
+.legend { display: grid; gap: 8px; font-size: .92rem; }
+.legend div { display: flex; gap: 10px; align-items: baseline; }
+
+/* Quiz */
+.top { display: flex; justify-content: space-between; align-items: center; font-variant-numeric: tabular-nums; color: var(--muted); }
+.top b { color: var(--fg); font-weight: 600; }
+.bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+.word { font-family: var(--serif); font-size: clamp(2rem, 7vw, 2.8rem); font-weight: 600; line-height: 1.15; overflow-wrap: anywhere; }
+.pos { color: var(--muted); }
+.opts { display: grid; gap: 10px; }
+.opt { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; display: flex; gap: 14px; align-items: baseline; }
+.opt:hover:not(:disabled) { border-color: var(--muted); }
+.opt kbd { font-family: var(--sans); font-size: .75rem; color: var(--muted); min-width: 1ch; }
+.opt.ok { background: var(--ok-bg); border-color: var(--ok); }
+.opt.bad { background: var(--bad-bg); border-color: var(--bad); }
+.opt.idk { color: var(--muted); }
+.opt:disabled { cursor: default; }
+.feedback { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 6px; }
+.tag { display: inline-flex; gap: 8px; align-items: center; font-size: .85rem; font-weight: 600; }
+.note { font-family: var(--serif); font-style: italic; }
+.foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+/* Sonuç */
+.score { font-family: var(--serif); font-size: 2.6rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.groups { display: grid; gap: 16px; }
+.group h2 { display: flex; gap: 10px; align-items: center; font-size: 1.1rem; }
+.group ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.group li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; border-bottom: 1px solid var(--line); padding-block: 6px; font-size: .95rem; }
+.group li b { font-weight: 600; }
+.group li small { display: block; color: var(--muted); font-style: italic; font-family: var(--serif); }
+.empty { color: var(--muted); font-size: .9rem; }
+textarea { width: 100%; min-height: 90px; font: .85rem/1.4 ui-monospace, monospace; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+@media (max-width: 480px) { .group li { grid-template-columns: 1fr; gap: 2px; } }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<div class="wrap">
+
+  <!-- Başlangıç -->
+  <section id="start" class="wrap" style="padding:0">
+    <div>
+      <p class="eyebrow">TestDaF · TDN 4 hedefi · Gesellschaft &amp; Politik</p>
+      <h1>Kelime testi</h1>
+    </div>
+    <div class="panel">
+      <p class="eyebrow">Hangi kelimeler</p>
+      <div class="row" id="catChips">
+        <button class="chip" data-cat="all" aria-pressed="true">Hepsi</button>
+        <button class="chip" data-cat="sa"><span class="dot sa"></span> SA</button>
+        <button class="chip" data-cat="hv"><span class="dot hv"></span> HV-LV</button>
+        <button class="chip" data-cat="wrong">Yanlışlarım</button>
+      </div>
+      <p class="eyebrow">Kaç soru</p>
+      <div class="row" id="lenChips">
+        <button class="chip" data-len="20" aria-pressed="true">20</button>
+        <button class="chip" data-len="50">50</button>
+        <button class="chip" data-len="0">Hepsi</button>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <span class="muted" id="poolInfo"></span>
+        <button class="btn primary" id="startBtn">Başla</button>
+      </div>
+    </div>
+    <div class="panel legend">
+      <p class="eyebrow">Bilemediğin kelimeler 3 gruba ayrılır</p>
+      <div><span class="dot sa"></span><span><b>SA – kesin bil.</b> Yazarken kendin kullanacaksın. Artikeli ve kalıbıyla öğren.</span></div>
+      <div><span class="dot hv"></span><span><b>HV-LV – tanı.</b> Okurken ve dinlerken anlaman yeterli.</span></div>
+      <div><span class="dot x"></span><span><b>Boşver.</b> Nadir ya da bağlamdan tahmin edilir. 7 günde öncelik değil.</span></div>
+    </div>
+    <p class="muted" style="font-size:.85rem">Klavye: 1–4 şık seçer, 5 “Bilmiyorum”, Enter sonraki soru.</p>
+  </section>
+
+  <!-- Soru -->
+  <section id="quiz" hidden class="wrap" style="padding:0">
+    <div class="top"><span><b id="qNum">1</b> / <span id="qTotal">20</span></span><span>Doğru: <b id="qScore">0</b></span></div>
+    <div class="bar"><i id="qBar"></i></div>
+    <div>
+      <div class="word" id="qWord"></div>
+      <p class="pos" id="qPos"></p>
+    </div>
+    <div class="opts" id="qOpts"></div>
+    <div class="feedback" id="qFb" hidden>
+      <span class="tag" id="qTag"></span>
+      <span class="note" id="qNote"></span>
+    </div>
+    <div class="foot">
+      <button class="btn" id="endBtn">Testi şimdi bitir</button>
+      <button class="btn primary" id="nextBtn" hidden>Sonraki →</button>
+    </div>
+  </section>
+
+  <!-- Sonuç -->
+  <section id="result" hidden class="wrap" style="padding:0">
+    <div>
+      <p class="eyebrow">Sonuç</p>
+      <div class="score" id="rScore"></div>
+      <p class="muted" id="rSub"></p>
+    </div>
+    <div class="groups" id="rGroups"></div>
+    <div class="panel">
+      <p class="eyebrow">Claude'a gönder</p>
+      <p class="muted" style="font-size:.9rem">Bunu kopyalayıp sohbete yapıştır. Bir sonraki çalışmayı buna göre planlarım.</p>
+      <textarea id="rText" readonly></textarea>
+      <div class="row"><button class="btn" id="copyBtn">Kopyala</button><span class="muted" id="copyMsg"></span></div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="retryBtn">Yanlışları tekrar et</button>
+      <button class="btn" id="homeBtn">Başa dön</button>
+    </div>
+  </section>
+</div>
+
+<script>
+// [Almanca, Türkçe, tür (n/v/a/r), grup (sa/hv/x), SA için kalıp/örnek]
+const WORDS = [
+["abschaffen","kaldırmak, son vermek","v","sa","die Wehrpflicht / Studiengebühren abschaffen"],
+["abschrecken","korkutup vazgeçirmek, yıldırmak","v","hv","eine abschreckende Wirkung haben"],
+["abstimmen","oylamak","v","hv","über etw. abstimmen"],
+["die Amtssprache","resmi dil","n","hv",""],
+["anerkennen","tanımak, kabul etmek, takdir etmek","v","sa","einen Abschluss / eine Leistung anerkennen"],
+["die Anerkennung","takdir, tanınma","n","sa","Anerkennung finden; die Anerkennung ausländischer Abschlüsse"],
+["angehören","ait olmak, üyesi olmak","v","hv","einer Minderheit angehören (+Dat.)"],
+["angreifen","saldırmak","v","hv",""],
+["der Angriff","saldırı","n","hv",""],
+["die Anhängerschaft","taraftarlar, yandaşlar","n","x",""],
+["das Ansehen","itibar, saygınlık","n","hv","an Ansehen gewinnen / verlieren"],
+["der Anspruch","hak, talep; beklenti","n","sa","Anspruch auf etw. haben; hohe Ansprüche stellen"],
+["anständig","terbiyeli, düzgün","a","hv",""],
+["das Asyl","sığınma, iltica","n","hv","Asyl beantragen"],
+["auftreten","ortaya çıkmak, meydana gelmek","v","hv","Probleme treten auf"],
+["aufwachsen","büyümek, yetişmek","v","sa","in einer Großstadt / zweisprachig aufwachsen"],
+["ausbrechen","patlak vermek, baş göstermek","v","hv","ein Krieg / eine Krankheit bricht aus"],
+["ausnutzen","faydalanmak; sömürmek","v","hv",""],
+["ausrufen","ilan etmek","v","x",""],
+["auswandern","(yurt dışına) göç etmek","v","sa","nach Kanada auswandern"],
+["beantragen","başvurmak, dilekçe vermek","v","hv","ein Visum beantragen"],
+["bedenklich","endişe verici, sakıncalı","a","sa","Diese Entwicklung ist bedenklich."],
+["bedrohen","tehdit etmek","v","hv",""],
+["bedürftig","muhtaç, yoksul","a","hv",""],
+["befehlen","emretmek","v","hv",""],
+["befürworten","desteklemek, lehte olmak","v","sa","Ich befürworte diesen Vorschlag, weil …"],
+["der Befürworter","destekçi, taraftar","n","sa","Befürworter und Gegner"],
+["begehen","(suç) işlemek","v","hv","eine Straftat begehen"],
+["die Behörde","resmi daire, makam","n","hv",""],
+["beistehen","yardım etmek, yanında olmak","v","x",""],
+["beitreten","katılmak, üye olmak","v","hv","der EU / einem Verein beitreten (+Dat.)"],
+["beklagen","yakınmak, üzülmek","v","hv",""],
+["beleidigen","hakaret etmek","v","hv",""],
+["berechtigt","haklı, yetkili","a","sa","Die Kritik ist durchaus berechtigt."],
+["die Berechtigung","hak, yetki","n","hv",""],
+["beschießen","ateşe tutmak","v","x",""],
+["beschimpfen","sövmek, hakaret etmek","v","x",""],
+["besetzen","işgal etmek; (yer) tutmak","v","hv",""],
+["besiedeln","iskân etmek","v","x",""],
+["bestrafen","cezalandırmak","v","hv",""],
+["betteln","dilenmek","v","x",""],
+["die Bevölkerung","nüfus, halk","n","sa","ein Großteil der Bevölkerung"],
+["die Beziehung","ilişki","n","sa","Beziehungen pflegen; in Beziehung zu"],
+["borniert","dar kafalı, bağnaz","a","x",""],
+["die Botschaft","büyükelçilik; mesaj","n","hv",""],
+["der Bundesbürger","Alman vatandaşı","n","hv","Grafiklerde sık: „Jeder dritte Bundesbürger …“"],
+["das Gesetz","kanun, yasa","n","sa","ein Gesetz verabschieden / einführen"],
+["das Mitglied","üye","n","hv",""],
+["das Umfeld","çevre, ortam","n","sa","im sozialen / familiären Umfeld"],
+["das Urteil","hüküm, karar","n","hv",""],
+["das Verhältnis","ilişki; oran","n","sa","im Verhältnis zu (grafik!)"],
+["das Vorurteil","önyargı","n","sa","Vorurteile abbauen"],
+["der Anstand","görgü, edep","n","x",""],
+["der Binnenvertriebene","ülke içinde yerinden edilmiş kişi","n","x",""],
+["der/die Bekannte","tanıdık","n","hv",""],
+["der Feind","düşman","n","hv",""],
+["der Kinderwunsch","çocuk sahibi olma isteği","n","hv",""],
+["der Nachwuchs","yeni nesil, genç yetenekler","n","hv",""],
+["der Rang","sıra, mevki, rütbe","n","hv","Grafikte: „belegt den ersten Rang“"],
+["der Rücktritt","istifa","n","hv",""],
+["der Täter","fail","n","hv",""],
+["der Vorwurf","suçlama, sitem","n","hv",""],
+["der Wandel","değişim, dönüşüm","n","sa","der gesellschaftliche / demografische Wandel"],
+["der Wertewandel","değerlerdeki değişim","n","hv",""],
+["der Zerfall","çöküş, bozulma","n","hv",""],
+["destruktiv","yıkıcı","a","hv",""],
+["die Anteilnahme","taziye, (acıya) ortak olma","n","x",""],
+["die Ausgrenzung","dışlama","n","sa","die Ausgrenzung von Minderheiten"],
+["die Einstellung","tutum, görüş; işe alma","n","sa","die Einstellung zu etw. (+Dat.)"],
+["die Elite","seçkinler","n","hv",""],
+["die Flucht","kaçış","n","hv",""],
+["die Frauensache","kadın işi","n","x",""],
+["die Glaubwürdigkeit","güvenilirlik","n","hv",""],
+["die Grenze","sınır","n","hv",""],
+["die Heimat","memleket, vatan","n","hv",""],
+["die Interaktion","etkileşim","n","hv",""],
+["die Korruption","yolsuzluk","n","hv",""],
+["die Maßnahme","önlem, tedbir","n","sa","Maßnahmen ergreifen / treffen"],
+["die Minderheit","azınlık","n","sa","Rechte von Minderheiten schützen"],
+["die Notlage","sıkıntılı durum","n","hv",""],
+["die Öffentlichkeit","kamuoyu","n","sa","in der Öffentlichkeit"],
+["die Privatsphäre","özel hayat, mahremiyet","n","hv",""],
+["die Sachbeschädigung","mala zarar verme","n","x",""],
+["die Scheidung","boşanma","n","hv",""],
+["die Siedlung","yerleşim yeri, site","n","hv",""],
+["die Spende","bağış","n","hv",""],
+["die Untugend","kötü huy","n","x",""],
+["die Unverschämtheit","küstahlık","n","x",""],
+["die Vernichtung","yok etme","n","hv",""],
+["die Verwaltungssprache","idari dil","n","x",""],
+["die Wahl","seçim; tercih","n","hv",""],
+["die Weichen stellen für","bir şeyin yolunu açmak, rotayı belirlemek","r","sa","die Weichen für die Zukunft stellen"],
+["die Wertschätzung","takdir, değer verme","n","hv",""],
+["die Zuwiderhandlung","ihlal","n","x",""],
+["durchbrechen","(engeli) aşmak, yarmak","v","hv",""],
+["ehrenamtlich","gönüllü","a","hv",""],
+["einbinden","dahil etmek","v","sa","Bürger in Entscheidungen einbinden"],
+["einbrechen","(hırsızlık için) zorla girmek","v","hv",""],
+["einfältig","saf, bön","a","x",""],
+["der Einfluss","etki","n","sa","Einfluss auf etw. haben / ausüben"],
+["der/die Einheimische","yerli halk","n","hv",""],
+["sich einleben","(yeni yere) alışmak","v","hv",""],
+["einlegen","koymak; (itiraz) etmek","v","hv","Widerspruch einlegen"],
+["einreden","birini bir şeye inandırmaya çalışmak","v","x",""],
+["die Einrichtung","kurum; döşeme","n","hv",""],
+["einseitig","tek yönlü, taraflı","a","sa","eine einseitige Sichtweise"],
+["einwandern","(bir ülkeye) göç etmek","v","sa","nach Deutschland einwandern"],
+["einwilligen","rıza göstermek","v","x",""],
+["der Einwohner","sakin, nüfus","n","hv",""],
+["entlarven","maskesini düşürmek","v","x",""],
+["erlassen","(yasa) çıkarmak; (borç) affetmek","v","hv",""],
+["erpressen","şantaj yapmak","v","x",""],
+["ersuchen","(resmi) rica etmek","v","x",""],
+["die Erwartungshaltung","beklenti","n","hv",""],
+["die Erziehung","eğitim, terbiye","n","sa","die Erziehung der Kinder"],
+["die Erziehungsfrage","terbiye meselesi","n","x",""],
+["festnehmen","gözaltına almak","v","hv",""],
+["fliehen","kaçmak","v","hv",""],
+["friedlich","barışçıl","a","hv",""],
+["gebieten","emretmek","v","x",""],
+["gerechtfertigt","haklı, meşru","a","sa","Diese Forderung ist (nicht) gerechtfertigt."],
+["die Gerechtigkeit","adalet","n","sa","soziale Gerechtigkeit"],
+["das Geschlecht","cinsiyet","n","hv",""],
+["die Gesellschaft","toplum; şirket","n","sa","in unserer heutigen Gesellschaft"],
+["das Geständnis","itiraf","n","hv",""],
+["die Gewalt","şiddet; güç","n","hv",""],
+["glaubwürdig","güvenilir, inandırıcı","a","hv",""],
+["grausam","zalim, acımasız","a","hv",""],
+["die Herkunft","köken","n","sa","unabhängig von der Herkunft"],
+["hoheitlich","devlete ait, egemenlikle ilgili","a","x",""],
+["die Initiative","girişim, inisiyatif","n","hv",""],
+["die Integration","entegrasyon, uyum","n","sa","die Integration von Zuwanderern fördern"],
+["kapitulieren","teslim olmak","v","x",""],
+["kinderfeindlich","çocuk düşmanı","a","x",""],
+["der Kompromiss","uzlaşma","n","sa","einen Kompromiss finden / eingehen"],
+["der Konflikt","çatışma, anlaşmazlık","n","hv",""],
+["kriminell","suça ilişkin, suçlu","a","hv",""],
+["der Lebensübergang","hayatın geçiş dönemi","n","x",""],
+["die Leiche","ceset","n","x",""],
+["leugnen","inkâr etmek","v","hv",""],
+["die Lüge","yalan","n","hv",""],
+["der Migrationshintergrund","göçmen kökeni","n","sa","Menschen mit Migrationshintergrund"],
+["missachten","hiçe saymak","v","hv",""],
+["mitsprechen","söz sahibi olmak","v","hv",""],
+["neutral","tarafsız","a","hv",""],
+["oppositionell","muhalif","a","x",""],
+["die Partizipation","katılım","n","hv",""],
+["provinziell","taşralı, dar görüşlü","a","x",""],
+["provozieren","kışkırtmak","v","hv",""],
+["rebellieren","isyan etmek","v","hv",""],
+["regieren","yönetmek","v","hv",""],
+["die Regierung","hükümet","n","hv",""],
+["die Rücksicht","saygı, özen, düşünce","n","sa","Rücksicht auf andere nehmen"],
+["die Rücksichtslosigkeit","düşüncesizlik, pervasızlık","n","x",""],
+["rücksichtsvoll","düşünceli, saygılı","a","hv",""],
+["rückständig","geri kalmış","a","x",""],
+["die Scheu","çekingenlik","n","x",""],
+["Scheu abbauen","çekingenliği azaltmak","r","x",""],
+["die Schuld","suç, kabahat; (çoğ.) borç","n","hv",""],
+["selbstherrlich","başına buyruk","a","x",""],
+["sich überwerfen","bozuşmak, arası açılmak","v","x",""],
+["sich weigern","reddetmek","v","hv",""],
+["die Solidarität","dayanışma","n","hv",""],
+["souverän","egemen; kendinden emin","a","hv",""],
+["spießig","dar görüşlü, küçük burjuva","a","x",""],
+["die Sprachenpolitik","dil politikası","n","x",""],
+["die Strafe","ceza","n","hv",""],
+["trauen","güvenmek","v","hv",""],
+["trauern","yas tutmak","v","hv",""],
+["in Kraft treten","yürürlüğe girmek","r","sa","Das Gesetz tritt 2027 in Kraft."],
+["überführen","suçunu kanıtlamak","v","x",""],
+["der Umbruch","köklü değişim","n","hv",""],
+["der Umgang","bir şeyle başa çıkma, davranış","n","sa","der Umgang mit Medien / mit Kritik"],
+["unsensibel","duyarsız","a","hv",""],
+["unterdrücken","bastırmak, ezmek","v","hv",""],
+["untergraben","baltalamak","v","hv",""],
+["unverschuldet","kendi kusuru olmadan","a","x",""],
+["verabschieden","(yasa) kabul etmek; uğurlamak","v","hv","ein Gesetz verabschieden"],
+["verarmt","yoksullaşmış","a","x",""],
+["das Verbrechen","suç, cürüm","n","hv",""],
+["verdächtig","şüpheli","a","hv",""],
+["vereinen","birleştirmek","v","hv","Beruf und Familie vereinen"],
+["die Verfassung","anayasa; durum","n","hv",""],
+["das Verhalten","davranış","n","sa","das Verhalten der Jugendlichen"],
+["vernehmen","sorgulamak","v","x",""],
+["die Verpflichtung","yükümlülük","n","sa","eine Verpflichtung eingehen"],
+["verpönt","ayıp sayılan","a","x",""],
+["verschärfen","şiddetlendirmek, sertleştirmek","v","sa","Das Problem verschärft sich zunehmend."],
+["versöhnen","barıştırmak","v","hv",""],
+["verstoßen","ihlal etmek","v","hv","gegen ein Gesetz verstoßen"],
+["verteidigen","savunmak","v","hv",""],
+["vertreten","temsil etmek; savunmak","v","sa","die Meinung / Ansicht vertreten, dass …"],
+["verurteilen","mahkûm etmek; kınamak","v","hv",""],
+["verwarnen","(resmi) uyarmak","v","x",""],
+["verwehren","esirgemek, izin vermemek","v","x",""],
+["verweigern","reddetmek, vermemek","v","hv",""],
+["verzeihen","affetmek","v","hv",""],
+["die Vorschrift","kural, yönetmelik","n","hv",""],
+["vorwerfen","suçlamak","v","hv","jdm. etw. vorwerfen"],
+["wahren","korumak (itibar, sır)","v","hv",""],
+["sich wandeln","değişmek, dönüşmek","v","sa","Die Rolle der Frau hat sich stark gewandelt."],
+["der/die Zugewanderte","göçmen","n","hv",""],
+["zum Schweigen bringen","susturmak","r","hv",""],
+["zwischenmenschlich","kişiler arası","a","sa","zwischenmenschliche Beziehungen"],
+];
+const POS = { n: "Nomen", v: "Verb", a: "Adjektiv", r: "Redewendung" };
+const CAT = { sa: "SA – kesin bil", hv: "HV-LV – tanı", x: "Boşver" };
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let wrongSet = new Set(store.get("tdaf-wrong", []));
+
+const $ = id => document.getElementById(id);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+let cat = "all", len = 20;
+let deck = [], idx = 0, score = 0, answered = false, misses = [], correctIdx = -1;
+
+function pool() {
+  if (cat === "wrong") return WORDS.filter(w => wrongSet.has(w[0]));
+  if (cat === "all") return WORDS;
+  return WORDS.filter(w => w[3] === cat);
+}
+function updatePoolInfo() {
+  const n = pool().length;
+  $("poolInfo").textContent = n ? `${n} kelime` : "Henüz yanlışın yok";
+  $("startBtn").disabled = n === 0;
+}
+function chips(boxId, attr, setter) {
+  $(boxId).addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    for (const c of $(boxId).children) c.setAttribute("aria-pressed", c === b);
+    setter(b.dataset[attr]); updatePoolInfo();
+  });
+}
+chips("catChips", "cat", v => cat = v);
+chips("lenChips", "len", v => len = +v);
+
+function show(id) { for (const s of ["start", "quiz", "result"]) $(s).hidden = s !== id; window.scrollTo(0, 0); }
+
+function start(words, all) {
+  deck = shuffle(words);
+  if (len && !all) deck = deck.slice(0, len);
+  idx = 0; score = 0; misses = [];
+  $("qTotal").textContent = deck.length;
+  show("quiz"); render();
+}
+
+function distractors(w) {
+  const same = WORDS.filter(o => o !== w && o[2] === w[2] && o[1] !== w[1]);
+  const other = WORDS.filter(o => o !== w && o[2] !== w[2]);
+  return shuffle(same).concat(shuffle(other)).slice(0, 3).map(o => o[1]);
+}
+
+function render() {
+  const w = deck[idx]; answered = false;
+  $("qNum").textContent = idx + 1;
+  $("qScore").textContent = score;
+  $("qBar").style.width = (idx / deck.length * 100) + "%";
+  $("qWord").textContent = w[0];
+  $("qPos").textContent = POS[w[2]] + " · ne demek?";
+  const opts = shuffle([w[1], ...distractors(w)]);
+  correctIdx = opts.indexOf(w[1]);
+  const box = $("qOpts"); box.innerHTML = "";
+  opts.forEach((t, i) => box.appendChild(optBtn(i + 1, t, () => answer(i))));
+  box.appendChild(optBtn(5, "Bilmiyorum", () => answer(-1), "idk"));
+  $("qFb").hidden = true; $("nextBtn").hidden = true;
+}
+function optBtn(k, text, fn, cls) {
+  const b = document.createElement("button");
+  b.className = "opt" + (cls ? " " + cls : "");
+  b.innerHTML = `<kbd>${k}</kbd><span></span>`;
+  b.lastChild.textContent = text;
+  b.onclick = fn; return b;
+}
+
+function answer(i) {
+  if (answered) return; answered = true;
+  const w = deck[idx], btns = $("qOpts").children;
+  for (const b of btns) b.disabled = true;
+  btns[correctIdx].classList.add("ok");
+  const right = i === correctIdx;
+  if (right) { score++; wrongSet.delete(w[0]); }
+  else { if (i >= 0) btns[i].classList.add("bad"); misses.push(w); wrongSet.add(w[0]); }
+  store.set("tdaf-wrong", [...wrongSet]);
+  $("qScore").textContent = score;
+  $("qTag").innerHTML = `<span class="dot ${w[3]}"></span>${CAT[w[3]]}`;
+  $("qNote").textContent = w[4];
+  $("qFb").hidden = false;
+  if (right) setTimeout(() => { if (answered && deck[idx] === w) next(); }, 750);
+  else { $("nextBtn").hidden = false; $("nextBtn").focus(); }
+}
+function next() { idx++; idx >= deck.length ? finish() : render(); }
+
+function finish() {
+  const done = answered ? idx + 1 : idx;
+  show("result");
+  $("rScore").textContent = `${score} / ${done}`;
+  $("rSub").textContent = done ? `%${Math.round(score / done * 100)} doğru · ${misses.length} kelime öğrenilecek` : "Hiç soru cevaplanmadı.";
+  const g = $("rGroups"); g.innerHTML = "";
+  const lines = [];
+  for (const c of ["sa", "hv", "x"]) {
+    const list = misses.filter(w => w[3] === c);
+    const sec = document.createElement("div"); sec.className = "group";
+    sec.innerHTML = `<h2><span class="dot ${c}"></span>${CAT[c]} <span class="muted" style="font-family:var(--sans);font-size:.9rem;font-weight:400">(${list.length})</span></h2>`;
+    if (!list.length) sec.insertAdjacentHTML("beforeend", `<p class="empty">Bu grupta yanlış yok.</p>`);
+    else {
+      const ul = document.createElement("ul");
+      for (const w of list) {
+        const li = document.createElement("li");
+        li.innerHTML = `<span><b></b><small></small></span><span></span>`;
+        li.querySelector("b").textContent = w[0];
+        li.querySelector("small").textContent = w[4];
+        li.lastChild.textContent = w[1];
+        ul.appendChild(li);
+      }
+      sec.appendChild(ul);
+    }
+    g.appendChild(sec);
+    lines.push(`${CAT[c]} (${list.length}): ${list.map(w => w[0]).join(", ") || "-"}`);
+  }
+  $("rText").value = `TestDaF test sonucu: ${score}/${done}\n` + lines.join("\n");
+  $("retryBtn").disabled = !misses.length;
+}
+
+$("startBtn").onclick = () => start(pool());
+$("nextBtn").onclick = next;
+$("endBtn").onclick = finish;
+$("homeBtn").onclick = () => { show("start"); updatePoolInfo(); };
+$("retryBtn").onclick = () => start(misses.slice(), true);
+$("copyBtn").onclick = () => {
+  const t = $("rText").value;
+  navigator.clipboard.writeText(t).then(() => $("copyMsg").textContent = "Kopyalandı",
+    () => { $("rText").select(); $("copyMsg").textContent = "Seçildi, Ctrl+C ile kopyala"; });
+};
+document.addEventListener("keydown", e => {
+  if ($("quiz").hidden) return;
+  if (!answered && e.key >= "1" && e.key <= "5") { const b = $("qOpts").children[+e.key - 1]; b && b.click(); }
+  else if (answered && e.key === "Enter") { e.preventDefault(); next(); }
+});
+updatePoolInfo();
+</script>
