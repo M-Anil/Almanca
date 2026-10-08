@@ -113,7 +113,7 @@ textarea { width: 100%; min-height: 90px; font: .85rem/1.4 ui-monospace, monospa
         <button class="btn" id="resetNo">Vazgeç</button>
       </div>
     </div>
-    <p class="muted" style="font-size:.85rem">Klavye: 1–4 şık seçer, 5 “Bilmiyorum”, Enter sonraki soru. İstediğin an ara verebilirsin, kaldığın yerden devam eder.</p>
+    <p class="muted" style="font-size:.85rem">Klavye: 1–4 şık seçer, 5 “Bilmiyorum”. İstediğin an ara verebilirsin, kaldığın yerden devam eder.</p>
   </section>
 
   <!-- Soru -->
@@ -127,7 +127,6 @@ textarea { width: 100%; min-height: 90px; font: .85rem/1.4 ui-monospace, monospa
     <div class="opts" id="qOpts"></div>
     <div class="foot">
       <button class="btn" id="pauseBtn">Ara ver</button>
-      <button class="btn primary" id="nextBtn" hidden>Sonraki →</button>
     </div>
   </section>
 
@@ -428,7 +427,6 @@ function render() {
   const box = $("qOpts"); box.innerHTML = "";
   opts.forEach((t, i) => box.appendChild(optBtn(i + 1, t, () => answer(i))));
   box.appendChild(optBtn(5, "Bilmiyorum", () => answer(-1), "idk"));
-  $("nextBtn").hidden = true;
 }
 function optBtn(k, text, fn, cls) {
   const b = document.createElement("button");
@@ -440,17 +438,11 @@ function optBtn(k, text, fn, cls) {
 
 function answer(i) {
   if (answered) return; answered = true;
-  const w = WORDS[run.pos], btns = $("qOpts").children;
-  for (const b of btns) b.disabled = true;
-  btns[correctIdx].classList.add("ok");
-  const right = i === correctIdx;
-  if (!right) { if (i >= 0) btns[i].classList.add("bad"); if (!run.misses.includes(w[0])) run.misses.push(w[0]); }
+  const w = WORDS[run.pos];
+  if (i !== correctIdx && !run.misses.includes(w[0])) run.misses.push(w[0]);
   run.pos++; save();
-  $("qMiss").textContent = run.misses.length;
-  if (right) { const at = run.pos; setTimeout(() => { if (answered && run.pos === at) next(); }, 650); }
-  else { $("nextBtn").hidden = false; $("nextBtn").focus(); }
+  render();
 }
-function next() { answered = false; render(); }
 
 function finish() {
   show("result");
@@ -461,8 +453,7 @@ function finish() {
 }
 
 $("startBtn").onclick = render;
-$("nextBtn").onclick = next;
-$("pauseBtn").onclick = () => { answered = false; home(); };
+$("pauseBtn").onclick = home;
 $("homeBtn").onclick = home;
 $("resetBtn").onclick = () => { $("resetConfirm").hidden = false; };
 $("resetNo").onclick = () => { $("resetConfirm").hidden = true; };
@@ -474,8 +465,7 @@ $("copyBtn").onclick = () => {
 };
 document.addEventListener("keydown", e => {
   if ($("quiz").hidden) return;
-  if (!answered && e.key >= "1" && e.key <= "5") { const b = $("qOpts").children[+e.key - 1]; b && b.click(); }
-  else if (answered && e.key === "Enter") { e.preventDefault(); next(); }
+  if (e.key >= "1" && e.key <= "5") { const b = $("qOpts").children[+e.key - 1]; b && b.click(); }
 });
 home();
 </script>
