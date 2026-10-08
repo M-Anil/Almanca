@@ -100,48 +100,33 @@ textarea { width: 100%; min-height: 90px; font: .85rem/1.4 ui-monospace, monospa
       <h1>Kelime testi</h1>
     </div>
     <div class="panel">
-      <p class="eyebrow">Hangi kelimeler</p>
-      <div class="row" id="catChips">
-        <button class="chip" data-cat="all" aria-pressed="true">Hepsi</button>
-        <button class="chip" data-cat="sa"><span class="dot sa"></span> SA</button>
-        <button class="chip" data-cat="hv"><span class="dot hv"></span> HV-LV</button>
-        <button class="chip" data-cat="wrong">Yanlışlarım</button>
-      </div>
-      <p class="eyebrow">Kaç soru</p>
-      <div class="row" id="lenChips">
-        <button class="chip" data-len="20" aria-pressed="true">20</button>
-        <button class="chip" data-len="50">50</button>
-        <button class="chip" data-len="0">Hepsi</button>
-      </div>
-      <div class="row" style="justify-content:space-between">
-        <span class="muted" id="poolInfo"></span>
+      <p>Listedeki <b id="sTotal"></b> kelime sırayla sorulur. Bilmediklerini Claude toplar ve sonra SA, HV-LV ve Boşver olarak ayırır.</p>
+      <div class="bar"><i id="sBar"></i></div>
+      <p class="muted" id="sInfo"></p>
+      <div class="row">
         <button class="btn primary" id="startBtn">Başla</button>
+        <button class="btn" id="resetBtn" hidden>Baştan başla</button>
+      </div>
+      <div class="row" id="resetConfirm" hidden>
+        <span>İlerleme ve bilinmeyenler silinsin mi?</span>
+        <button class="btn" id="resetYes">Evet, sil</button>
+        <button class="btn" id="resetNo">Vazgeç</button>
       </div>
     </div>
-    <div class="panel legend">
-      <p class="eyebrow">Bilemediğin kelimeler 3 gruba ayrılır</p>
-      <div><span class="dot sa"></span><span><b>SA – kesin bil.</b> Yazarken kendin kullanacaksın. Artikeli ve kalıbıyla öğren.</span></div>
-      <div><span class="dot hv"></span><span><b>HV-LV – tanı.</b> Okurken ve dinlerken anlaman yeterli.</span></div>
-      <div><span class="dot x"></span><span><b>Boşver.</b> Nadir ya da bağlamdan tahmin edilir. 7 günde öncelik değil.</span></div>
-    </div>
-    <p class="muted" style="font-size:.85rem">Klavye: 1–4 şık seçer, 5 “Bilmiyorum”, Enter sonraki soru.</p>
+    <p class="muted" style="font-size:.85rem">Klavye: 1–4 şık seçer, 5 “Bilmiyorum”, Enter sonraki soru. İstediğin an ara verebilirsin, kaldığın yerden devam eder.</p>
   </section>
 
   <!-- Soru -->
   <section id="quiz" hidden class="wrap" style="padding:0">
-    <div class="top"><span><b id="qNum">1</b> / <span id="qTotal">20</span></span><span>Doğru: <b id="qScore">0</b></span></div>
+    <div class="top"><span><b id="qNum">1</b> / <span id="qTotal"></span></span><span>Bilinmeyen: <b id="qMiss">0</b></span></div>
     <div class="bar"><i id="qBar"></i></div>
     <div>
       <div class="word" id="qWord"></div>
       <p class="pos" id="qPos"></p>
     </div>
     <div class="opts" id="qOpts"></div>
-    <div class="feedback" id="qFb" hidden>
-      <span class="tag" id="qTag"></span>
-      <span class="note" id="qNote"></span>
-    </div>
     <div class="foot">
-      <button class="btn" id="endBtn">Testi şimdi bitir</button>
+      <button class="btn" id="pauseBtn">Ara ver</button>
       <button class="btn primary" id="nextBtn" hidden>Sonraki →</button>
     </div>
   </section>
@@ -149,19 +134,17 @@ textarea { width: 100%; min-height: 90px; font: .85rem/1.4 ui-monospace, monospa
   <!-- Sonuç -->
   <section id="result" hidden class="wrap" style="padding:0">
     <div>
-      <p class="eyebrow">Sonuç</p>
+      <p class="eyebrow">Liste bitti</p>
       <div class="score" id="rScore"></div>
       <p class="muted" id="rSub"></p>
     </div>
-    <div class="groups" id="rGroups"></div>
     <div class="panel">
-      <p class="eyebrow">Claude'a gönder</p>
-      <p class="muted" style="font-size:.9rem">Sonuçların Claude'a otomatik gider. Gitmezse bunu kopyalayıp sohbete yapıştır.</p>
+      <p>Sonuçların Claude'a kaydedildi. Sohbete <b>“bitti”</b> yaz; bilmediklerini SA, HV-LV ve Boşver olarak ayıracak.</p>
+      <p class="muted" style="font-size:.9rem">Kayıt başarısız olursa bunu kopyalayıp yapıştır:</p>
       <textarea id="rText" readonly></textarea>
       <div class="row"><button class="btn" id="copyBtn">Kopyala</button><span class="muted" id="copyMsg"></span></div>
     </div>
     <div class="row">
-      <button class="btn primary" id="retryBtn">Yanlışları tekrar et</button>
       <button class="btn" id="homeBtn">Başa dön</button>
     </div>
   </section>
@@ -376,70 +359,52 @@ const WORDS = [
 ["zwischenmenschlich","kişiler arası","a","sa","zwischenmenschliche Beziehungen"],
 ];
 const POS = { n: "Nomen", v: "Verb", a: "Adjektiv", r: "Redewendung" };
-const CAT = { sa: "SA – kesin bil", hv: "HV-LV – tanı", x: "Boşver" };
-
+const $ = id => document.getElementById(id);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
-let wrongSet = new Set(store.get("tdaf-wrong", []));
 
-// İlerleme Claude'un okuyabilmesi için db'ye de yazılır; db yoksa sadece tarayıcıda kalır.
-let remote = null, saveTimer = null, lastTest = null;
-function saveRemote() {
+// İlerleme: kaçıncı sorudayız ve bilinmeyen kelimeler. Tarayıcıda ve (varsa) db'de tutulur.
+let run = store.get("tdaf-run", { pos: 0, misses: [] });
+let remote = null, saveTimer = null;
+function save() {
+  store.set("tdaf-run", run);
   if (!remote) return;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    remote.doc("progress/state").set({ wrong: [...wrongSet], lastTest, updatedAt: new Date().toISOString() }).catch(() => {});
-  }, 800);
+    remote.doc("progress/run").set({ ...run, total: WORDS.length, done: run.pos >= WORDS.length, updatedAt: new Date().toISOString() }).catch(() => {});
+  }, 600);
 }
 (async () => {
   const db = await window.claude?.use?.("db");
   if (!db) return;
   try {
-    const snap = await db.doc("progress/state").get();
-    const d = snap.exists ? snap.data() : {};
-    for (const w of d.wrong || []) wrongSet.add(w);
-    lastTest = d.lastTest || null;
-    store.set("tdaf-wrong", [...wrongSet]);
-    remote = db; saveRemote(); updatePoolInfo();
+    const snap = await db.doc("progress/run").get();
+    if (snap.exists) {
+      const d = snap.data();
+      if ((d.pos || 0) > run.pos) run = { pos: d.pos, misses: d.misses || [] };
+    }
+    remote = db; save();
+    if (!$("start").hidden) home();
   } catch {}
 })();
 
-const $ = id => document.getElementById(id);
-const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-
-let cat = "all", len = 20;
-let deck = [], idx = 0, score = 0, answered = false, misses = [], correctIdx = -1;
-
-function pool() {
-  if (cat === "wrong") return WORDS.filter(w => wrongSet.has(w[0]));
-  if (cat === "all") return WORDS;
-  return WORDS.filter(w => w[3] === cat);
-}
-function updatePoolInfo() {
-  const n = pool().length;
-  $("poolInfo").textContent = n ? `${n} kelime` : "Henüz yanlışın yok";
-  $("startBtn").disabled = n === 0;
-}
-function chips(boxId, attr, setter) {
-  $(boxId).addEventListener("click", e => {
-    const b = e.target.closest("button"); if (!b) return;
-    for (const c of $(boxId).children) c.setAttribute("aria-pressed", c === b);
-    setter(b.dataset[attr]); updatePoolInfo();
-  });
-}
-chips("catChips", "cat", v => cat = v);
-chips("lenChips", "len", v => len = +v);
+let answered = false, correctIdx = -1;
 
 function show(id) { for (const s of ["start", "quiz", "result"]) $(s).hidden = s !== id; window.scrollTo(0, 0); }
 
-function start(words, all) {
-  deck = shuffle(words);
-  if (len && !all) deck = deck.slice(0, len);
-  idx = 0; score = 0; misses = [];
-  $("qTotal").textContent = deck.length;
-  show("quiz"); render();
+function home() {
+  show("start");
+  const n = WORDS.length, p = Math.min(run.pos, n);
+  $("sTotal").textContent = n;
+  $("sBar").style.width = (p / n * 100) + "%";
+  $("resetConfirm").hidden = true;
+  $("resetBtn").hidden = p === 0;
+  if (p === 0) { $("sInfo").textContent = "Henüz başlamadın."; $("startBtn").textContent = "Başla"; }
+  else if (p >= n) { $("sInfo").textContent = `Liste bitti · ${run.misses.length} bilinmeyen kelime`; $("startBtn").textContent = "Sonucu gör"; }
+  else { $("sInfo").textContent = `${p} / ${n} soru cevaplandı · ${run.misses.length} bilinmeyen`; $("startBtn").textContent = `Devam et (${p + 1}. soru)`; }
 }
 
 function distractors(w) {
@@ -449,10 +414,13 @@ function distractors(w) {
 }
 
 function render() {
-  const w = deck[idx]; answered = false;
-  $("qNum").textContent = idx + 1;
-  $("qScore").textContent = score;
-  $("qBar").style.width = (idx / deck.length * 100) + "%";
+  if (run.pos >= WORDS.length) return finish();
+  const w = WORDS[run.pos]; answered = false;
+  show("quiz");
+  $("qNum").textContent = run.pos + 1;
+  $("qTotal").textContent = WORDS.length;
+  $("qMiss").textContent = run.misses.length;
+  $("qBar").style.width = (run.pos / WORDS.length * 100) + "%";
   $("qWord").textContent = w[0];
   $("qPos").textContent = POS[w[2]] + " · ne demek?";
   const opts = shuffle([w[1], ...distractors(w)]);
@@ -460,7 +428,7 @@ function render() {
   const box = $("qOpts"); box.innerHTML = "";
   opts.forEach((t, i) => box.appendChild(optBtn(i + 1, t, () => answer(i))));
   box.appendChild(optBtn(5, "Bilmiyorum", () => answer(-1), "idk"));
-  $("qFb").hidden = true; $("nextBtn").hidden = true;
+  $("nextBtn").hidden = true;
 }
 function optBtn(k, text, fn, cls) {
   const b = document.createElement("button");
@@ -472,60 +440,33 @@ function optBtn(k, text, fn, cls) {
 
 function answer(i) {
   if (answered) return; answered = true;
-  const w = deck[idx], btns = $("qOpts").children;
+  const w = WORDS[run.pos], btns = $("qOpts").children;
   for (const b of btns) b.disabled = true;
   btns[correctIdx].classList.add("ok");
   const right = i === correctIdx;
-  if (right) { score++; wrongSet.delete(w[0]); }
-  else { if (i >= 0) btns[i].classList.add("bad"); misses.push(w); wrongSet.add(w[0]); }
-  store.set("tdaf-wrong", [...wrongSet]); saveRemote();
-  $("qScore").textContent = score;
-  $("qTag").innerHTML = `<span class="dot ${w[3]}"></span>${CAT[w[3]]}`;
-  $("qNote").textContent = w[4];
-  $("qFb").hidden = false;
-  if (right) setTimeout(() => { if (answered && deck[idx] === w) next(); }, 750);
+  if (!right) { if (i >= 0) btns[i].classList.add("bad"); if (!run.misses.includes(w[0])) run.misses.push(w[0]); }
+  run.pos++; save();
+  $("qMiss").textContent = run.misses.length;
+  if (right) { const at = run.pos; setTimeout(() => { if (answered && run.pos === at) next(); }, 650); }
   else { $("nextBtn").hidden = false; $("nextBtn").focus(); }
 }
-function next() { idx++; idx >= deck.length ? finish() : render(); }
+function next() { answered = false; render(); }
 
 function finish() {
-  const done = answered ? idx + 1 : idx;
   show("result");
-  $("rScore").textContent = `${score} / ${done}`;
-  $("rSub").textContent = done ? `%${Math.round(score / done * 100)} doğru · ${misses.length} kelime öğrenilecek` : "Hiç soru cevaplanmadı.";
-  const g = $("rGroups"); g.innerHTML = "";
-  const lines = [];
-  for (const c of ["sa", "hv", "x"]) {
-    const list = misses.filter(w => w[3] === c);
-    const sec = document.createElement("div"); sec.className = "group";
-    sec.innerHTML = `<h2><span class="dot ${c}"></span>${CAT[c]} <span class="muted" style="font-family:var(--sans);font-size:.9rem;font-weight:400">(${list.length})</span></h2>`;
-    if (!list.length) sec.insertAdjacentHTML("beforeend", `<p class="empty">Bu grupta yanlış yok.</p>`);
-    else {
-      const ul = document.createElement("ul");
-      for (const w of list) {
-        const li = document.createElement("li");
-        li.innerHTML = `<span><b></b><small></small></span><span></span>`;
-        li.querySelector("b").textContent = w[0];
-        li.querySelector("small").textContent = w[4];
-        li.lastChild.textContent = w[1];
-        ul.appendChild(li);
-      }
-      sec.appendChild(ul);
-    }
-    g.appendChild(sec);
-    lines.push(`${CAT[c]} (${list.length}): ${list.map(w => w[0]).join(", ") || "-"}`);
-  }
-  $("rText").value = `TestDaF test sonucu: ${score}/${done}\n` + lines.join("\n");
-  $("retryBtn").disabled = !misses.length;
-  lastTest = { at: new Date().toISOString(), score, done, misses: misses.map(w => w[0]) };
-  saveRemote();
+  const n = WORDS.length, m = run.misses.length;
+  $("rScore").textContent = `${n - m} / ${n}`;
+  $("rSub").textContent = `${m} kelimeyi bilmedin.`;
+  $("rText").value = `TestDaF: ${n - m}/${n} bilinen\nBilinmeyenler: ${run.misses.join(", ")}`;
 }
 
-$("startBtn").onclick = () => start(pool());
+$("startBtn").onclick = render;
 $("nextBtn").onclick = next;
-$("endBtn").onclick = finish;
-$("homeBtn").onclick = () => { show("start"); updatePoolInfo(); };
-$("retryBtn").onclick = () => start(misses.slice(), true);
+$("pauseBtn").onclick = () => { answered = false; home(); };
+$("homeBtn").onclick = home;
+$("resetBtn").onclick = () => { $("resetConfirm").hidden = false; };
+$("resetNo").onclick = () => { $("resetConfirm").hidden = true; };
+$("resetYes").onclick = () => { run = { pos: 0, misses: [] }; save(); home(); };
 $("copyBtn").onclick = () => {
   const t = $("rText").value;
   navigator.clipboard.writeText(t).then(() => $("copyMsg").textContent = "Kopyalandı",
@@ -536,5 +477,5 @@ document.addEventListener("keydown", e => {
   if (!answered && e.key >= "1" && e.key <= "5") { const b = $("qOpts").children[+e.key - 1]; b && b.click(); }
   else if (answered && e.key === "Enter") { e.preventDefault(); next(); }
 });
-updatePoolInfo();
+home();
 </script>
