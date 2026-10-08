@@ -156,7 +156,7 @@ textarea { width: 100%; min-height: 90px; font: .85rem/1.4 ui-monospace, monospa
     <div class="groups" id="rGroups"></div>
     <div class="panel">
       <p class="eyebrow">Claude'a gönder</p>
-      <p class="muted" style="font-size:.9rem">Bunu kopyalayıp sohbete yapıştır. Bir sonraki çalışmayı buna göre planlarım.</p>
+      <p class="muted" style="font-size:.9rem">Sonuçların Claude'a otomatik gider. Gitmezse bunu kopyalayıp sohbete yapıştır.</p>
       <textarea id="rText" readonly></textarea>
       <div class="row"><button class="btn" id="copyBtn">Kopyala</button><span class="muted" id="copyMsg"></span></div>
     </div>
@@ -384,6 +384,28 @@ const store = {
 };
 let wrongSet = new Set(store.get("tdaf-wrong", []));
 
+// İlerleme Claude'un okuyabilmesi için db'ye de yazılır; db yoksa sadece tarayıcıda kalır.
+let remote = null, saveTimer = null, lastTest = null;
+function saveRemote() {
+  if (!remote) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    remote.doc("progress/state").set({ wrong: [...wrongSet], lastTest, updatedAt: new Date().toISOString() }).catch(() => {});
+  }, 800);
+}
+(async () => {
+  const db = await window.claude?.use?.("db");
+  if (!db) return;
+  try {
+    const snap = await db.doc("progress/state").get();
+    const d = snap.exists ? snap.data() : {};
+    for (const w of d.wrong || []) wrongSet.add(w);
+    lastTest = d.lastTest || null;
+    store.set("tdaf-wrong", [...wrongSet]);
+    remote = db; saveRemote(); updatePoolInfo();
+  } catch {}
+})();
+
 const $ = id => document.getElementById(id);
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
@@ -456,7 +478,7 @@ function answer(i) {
   const right = i === correctIdx;
   if (right) { score++; wrongSet.delete(w[0]); }
   else { if (i >= 0) btns[i].classList.add("bad"); misses.push(w); wrongSet.add(w[0]); }
-  store.set("tdaf-wrong", [...wrongSet]);
+  store.set("tdaf-wrong", [...wrongSet]); saveRemote();
   $("qScore").textContent = score;
   $("qTag").innerHTML = `<span class="dot ${w[3]}"></span>${CAT[w[3]]}`;
   $("qNote").textContent = w[4];
@@ -495,6 +517,8 @@ function finish() {
   }
   $("rText").value = `TestDaF test sonucu: ${score}/${done}\n` + lines.join("\n");
   $("retryBtn").disabled = !misses.length;
+  lastTest = { at: new Date().toISOString(), score, done, misses: misses.map(w => w[0]) };
+  saveRemote();
 }
 
 $("startBtn").onclick = () => start(pool());
