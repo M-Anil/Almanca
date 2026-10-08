@@ -670,7 +670,8 @@ const store = {
 // İlerleme her ünite için ayrı: kaçıncı sorudayız ve bilinmeyenler. Tarayıcıda ve (varsa) db'de tutulur.
 const runs = {};
 for (const u of UNITS) runs[u.id] = store.get(u.local, { pos: 0, misses: [] });
-let unit = UNITS[Math.min(store.get("tdaf-unit", UNITS.length - 1), UNITS.length - 1)];
+// Açılışta henüz bitmemiş son ünite seçilir.
+let unit = [...UNITS].reverse().find(u => runs[u.id].pos < u.words.length) || UNITS[UNITS.length - 1];
 let WORDS = unit.words, run = runs[unit.id];
 function setUnit(u) { unit = u; WORDS = u.words; run = runs[u.id]; store.set("tdaf-unit", UNITS.indexOf(u)); }
 
